@@ -211,10 +211,10 @@ export function UploadMenu({ visible, onClose, onSelect }: UploadMenuProps) {
               <Text variant="bodyStrong">Save to my library</Text>
               <Text variant="caption" tone="faint">
                 {persist
-                  ? 'Stored so you can reopen it later.'
+                  ? 'Saved to your library — reopen anytime.'
                   : user
-                    ? 'Private: used this session only, never stored.'
-                    : 'Sign in to save documents.'}
+                    ? 'Temporary — deleted automatically when you leave the chat.'
+                    : 'Sign in to save documents to your library.'}
               </Text>
             </View>
             <Switch

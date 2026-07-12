@@ -102,6 +102,24 @@ class Settings(BaseSettings):
         description="Max in-memory QA engines kept (LRU); evicted ones are rebuilt on demand",
     )
 
+    # --- Cloudflare R2 object storage (optional) --------------------------
+    # Leave blank to keep files on local disk. When all four are set, uploaded
+    # files are written to R2 for durability; the local copy is kept as a hot
+    # cache for the ingestion thread and FileResponse serving.
+    r2_account_id: str = Field(default="", description="Cloudflare account ID")
+    r2_access_key_id: str = Field(default="", description="R2 API token access key ID")
+    r2_secret_access_key: str = Field(default="", description="R2 API token secret")
+    r2_bucket_name: str = Field(default="", description="R2 bucket name")
+
+    @property
+    def r2_enabled(self) -> bool:
+        return bool(
+            self.r2_account_id
+            and self.r2_access_key_id
+            and self.r2_secret_access_key
+            and self.r2_bucket_name
+        )
+
     # --- Gemini LLM -------------------------------------------------------
     gemini_api_key: str = Field(default="", description="Google AI Studio API key")
     gemini_model: str = Field(default="gemini-2.0-flash", description="Gemini model ID")

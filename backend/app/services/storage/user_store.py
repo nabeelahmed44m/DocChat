@@ -82,3 +82,10 @@ class UserStore:
                 .values(name=name, updated_at=now)
             )
         return self.get_by_id(user_id)
+
+    def delete(self, user_id: str) -> bool:
+        with self._lock, self._engine.begin() as conn:
+            result = conn.execute(
+                self._table.delete().where(self._table.c.id == user_id)
+            )
+        return result.rowcount > 0

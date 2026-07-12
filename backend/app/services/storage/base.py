@@ -28,6 +28,9 @@ from app.services.qa import QAEngine
 
 logger = get_logger(__name__)
 
+# Prefix stored in the `stored_path` DB column to flag an R2 object key.
+_R2_PREFIX = "r2:"
+
 
 class BaseDocumentStore(abc.ABC):
     """Shared store behavior; subclasses implement metadata persistence."""
@@ -42,6 +45,20 @@ class BaseDocumentStore(abc.ABC):
         self._analysis: dict[tuple[str, str], object] = {}
 
         self._settings.uploads_dir.mkdir(parents=True, exist_ok=True)
+
+        # R2 is optional — only initialised when all four credentials are set.
+        self._r2 = None
+        if self._settings.r2_enabled:
+            from app.services.storage.r2_file_store import R2FileStore
+
+            self._r2 = R2FileStore(
+                account_id=self._settings.r2_account_id,
+                access_key_id=self._settings.r2_access_key_id,
+                secret_access_key=self._settings.r2_secret_access_key,
+                bucket_name=self._settings.r2_bucket_name,
+            )
+            logger.info("R2 file store enabled (bucket: %s)", self._settings.r2_bucket_name)
+
         self._initialize()
 
     # -- abstract persistence hooks ---------------------------------------
@@ -78,22 +95,34 @@ class BaseDocumentStore(abc.ABC):
     ) -> DocumentRecord:
         """Register an uploaded file as QUEUED.
 
-        When ``persist`` is False the document is kept in memory for the session
-        only — its metadata is never written to the database/registry, so it
-        disappears on restart and leaves no stored trace.
+        When ``persist`` is False the document is session-only — never written to
+        the database, auto-deleted when the user leaves the chat screen.
+
+        When ``persist`` is True and R2 is configured, the bytes are uploaded to
+        R2 for durability in addition to the local disk copy (used for ingestion).
+        ``stored_path`` is set to ``r2:<key>``; callers resolve the actual local
+        path via :meth:`get_file_path`.
         """
 
         doc_id = uuid.uuid4().hex
         suffix = Path(filename).suffix
-        stored = self._settings.uploads_dir / f"{doc_id}{suffix}"
-        stored.write_bytes(data)
+        local = self._settings.uploads_dir / f"{doc_id}{suffix}"
+        local.write_bytes(data)
+
+        # Upload to R2 for persistent docs when R2 is configured.
+        if persist and self._r2 is not None:
+            r2_key = f"uploads/{doc_id}{suffix}"
+            self._r2.upload(r2_key, data, mime_type)
+            stored_path = f"{_R2_PREFIX}{r2_key}"
+        else:
+            stored_path = str(local)
 
         record = DocumentRecord(
             id=doc_id,
             filename=filename,
             mime_type=mime_type,
             size_bytes=len(data),
-            stored_path=str(stored),
+            stored_path=stored_path,
             owner=owner,
             persist=persist,
         )
@@ -102,12 +131,13 @@ class BaseDocumentStore(abc.ABC):
             if persist:
                 self._save_record(record)
         logger.info(
-            "registered document %s (%s, %d bytes, owner=%s, persist=%s)",
+            "registered document %s (%s, %d bytes, owner=%s, persist=%s, r2=%s)",
             doc_id,
             filename,
             len(data),
             owner,
             persist,
+            stored_path.startswith(_R2_PREFIX),
         )
         return record
 
@@ -131,6 +161,32 @@ class BaseDocumentStore(abc.ABC):
             if record.persist:
                 self._save_record(record)
 
+    def get_file_path(self, doc_id: str) -> Path:
+        """Return a local ``Path`` for the file, downloading from R2 if needed.
+
+        For ephemeral (non-persist) documents the file is always local. For R2
+        documents the local copy is kept as a hot cache; if it has been purged
+        (e.g. server redeployed) this method re-downloads it transparently.
+        """
+        with self._lock:
+            record = self._records.get(doc_id)
+        if record is None:
+            raise FileNotFoundError(f"document {doc_id} not found in store")
+
+        sp = record.stored_path
+        if sp.startswith(_R2_PREFIX):
+            r2_key = sp[len(_R2_PREFIX):]
+            local = self._settings.uploads_dir / Path(r2_key).name
+            if not local.exists():
+                if self._r2 is None:
+                    raise FileNotFoundError(
+                        f"R2 not configured but stored_path is an R2 key: {sp}"
+                    )
+                logger.info("R2 cache miss — downloading %s", r2_key)
+                local.write_bytes(self._r2.download(r2_key))
+            return local
+        return Path(sp)
+
     def delete(self, doc_id: str) -> bool:
         with self._lock:
             record = self._records.pop(doc_id, None)
@@ -139,10 +195,24 @@ class BaseDocumentStore(abc.ABC):
                 self._analysis.pop(key, None)
             if record is None:
                 return False
-            try:
-                record.path.unlink(missing_ok=True)
-            except OSError:  # pragma: no cover
-                logger.warning("could not delete file for %s", doc_id)
+
+            # Delete the local file (local path or local cache of R2 object).
+            sp = record.stored_path
+            if sp.startswith(_R2_PREFIX):
+                r2_key = sp[len(_R2_PREFIX):]
+                local = self._settings.uploads_dir / Path(r2_key).name
+                local.unlink(missing_ok=True)
+                if self._r2 is not None:
+                    try:
+                        self._r2.delete(r2_key)
+                    except Exception:  # noqa: BLE001
+                        logger.warning("could not delete R2 object %s", r2_key)
+            else:
+                try:
+                    Path(sp).unlink(missing_ok=True)
+                except OSError:  # pragma: no cover
+                    logger.warning("could not delete local file for %s", doc_id)
+
             if record.persist:
                 self._delete_record(doc_id)
         return True

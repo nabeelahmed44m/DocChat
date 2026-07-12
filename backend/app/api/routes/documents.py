@@ -121,7 +121,7 @@ def _require_ready(
         logger.info("rebuilding engine for %s (cold cache)", doc_id)
         from app.pipeline import ingest
 
-        engine = ingest(record.path).engine
+        engine = ingest(store.get_file_path(doc_id)).engine
         store.set_engine(doc_id, engine)
     return record, engine
 
@@ -216,11 +216,12 @@ async def get_file(
     owner: str = Depends(get_owner),
 ) -> FileResponse:
     record = _require(store, doc_id, owner)
-    file_path = Path(record.path)
-    if not file_path.exists():
+    try:
+        file_path = store.get_file_path(doc_id)
+    except FileNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="File not found on disk",
+            detail="File not found",
         )
     return FileResponse(
         path=str(file_path),

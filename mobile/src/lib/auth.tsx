@@ -34,6 +34,7 @@ interface AuthValue {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, name: string, password: string) => Promise<void>;
   updateProfile: (name: string) => Promise<void>;
+  deleteAccount: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -122,6 +123,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [_put, token, user],
   );
 
+  const deleteAccount = useCallback(async () => {
+    if (!token) throw new Error('Not logged in');
+    const res = await fetch(`${baseUrl}/auth/profile`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok && res.status !== 204) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data?.detail ?? 'Could not delete account');
+    }
+    setToken(null);
+    setUser(null);
+    await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
+  }, [token, baseUrl]);
+
   const logout = useCallback(async () => {
     setToken(null);
     setUser(null);
@@ -129,8 +145,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, token, ready, login, register, updateProfile, logout }),
-    [user, token, ready, login, register, updateProfile, logout],
+    () => ({ user, token, ready, login, register, updateProfile, deleteAccount, logout }),
+    [user, token, ready, login, register, updateProfile, deleteAccount, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

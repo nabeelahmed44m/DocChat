@@ -48,7 +48,8 @@ class IngestionService:
 
         self._store.mark(doc_id, DocumentStatus.PROCESSING)
         try:
-            result = ingest(record.path, self._settings)
+            file_path = self._store.get_file_path(doc_id)
+            result = ingest(file_path, self._settings)
             self._store.set_engine(doc_id, result.engine)
             self._store.mark(doc_id, DocumentStatus.READY, stats=result.stats)
             logger.info("ingestion complete for %s: %s", doc_id, result.stats)

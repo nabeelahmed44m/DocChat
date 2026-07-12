@@ -14,6 +14,7 @@ import {
 } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useAuth } from '@/lib/auth';
 import { useSettings } from '@/lib/settings';
 import { createSmoothStream } from '@/lib/smoothStream';
 import { api, type ApiCtx } from './client';
@@ -21,12 +22,19 @@ import type { DocumentRecord, PickedFile } from './types';
 
 const IN_FLIGHT: readonly string[] = ['queued', 'processing'];
 
-/** Build the API context (base URL + key) and a stable cache-scope string. */
+/** Build the API context (base URL + key) and a stable cache-scope string.
+ *
+ * JWT from the auth context is used as the bearer token so that document
+ * requests are scoped to the logged-in user on the backend. The manual apiKey
+ * setting is kept as a fallback for API-key-only deployments.
+ */
 function useApiCtx(): { ctx: ApiCtx; scope: string } {
   const { baseUrl, apiKey } = useSettings();
+  const { token } = useAuth();
+  const effectiveKey = token ?? apiKey ?? undefined;
   return useMemo(
-    () => ({ ctx: { baseUrl, apiKey }, scope: `${baseUrl}#${apiKey}` }),
-    [baseUrl, apiKey],
+    () => ({ ctx: { baseUrl, apiKey: effectiveKey }, scope: `${baseUrl}#${effectiveKey}` }),
+    [baseUrl, effectiveKey],
   );
 }
 

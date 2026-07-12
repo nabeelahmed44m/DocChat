@@ -130,3 +130,10 @@ def update_profile(body: UpdateProfileRequest, user_id: str = Depends(current_us
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return _user_response(user)
+
+
+@router.delete("/profile", status_code=204)
+def delete_account(user_id: str = Depends(current_user_id)):
+    deleted = _get_user_store().delete(user_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="User not found")

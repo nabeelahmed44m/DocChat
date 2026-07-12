@@ -1,7 +1,7 @@
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { FileText, MapPin, SearchX } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -61,7 +61,7 @@ export default function SearchScreen() {
       StyleSheet.create({
         container: { flex: 1, backgroundColor: palette.bg },
         body: { flex: 1 },
-        center: { flex: 1, justifyContent: 'center' },
+        center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.sm },
         list: { padding: spacing.lg },
         separator: { height: spacing.md },
         resultHeader: { marginBottom: spacing.md },
@@ -77,11 +77,15 @@ export default function SearchScreen() {
   const results = search.data?.results ?? [];
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={90}
+    >
       <View style={styles.body}>
         {search.isPending ? (
           <View style={styles.center}>
-            <ActivityIndicator color={palette.accent} />
+            <ActivityIndicator size="large" color={palette.accent} />
             <Text variant="caption" tone="faint">
               Searching all documents…
             </Text>
@@ -129,6 +133,6 @@ export default function SearchScreen() {
           placeholder="Search all documents…"
         />
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

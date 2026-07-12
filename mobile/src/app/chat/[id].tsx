@@ -1,6 +1,6 @@
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { Stack, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 function cleanMarkdown(text: string): string {
   return text
@@ -20,7 +20,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { FileWarning, Loader, Sparkles, Trash2 } from 'lucide-react-native';
+import { Clock, FileWarning, Loader, Sparkles, Trash2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAskStream, useDeleteDocument, useDocuments, useDocumentStatus, type ChatMessage } from '@/api/hooks';
@@ -220,9 +220,11 @@ function ProcessingOrFailed({ status, error }: { status: string; error?: string 
 }
 
 export default function ChatScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, ephemeral } = useLocalSearchParams<{ id: string; ephemeral?: string }>();
+  const isEphemeral = ephemeral === 'true';
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const navigation = useNavigation();
   const { palette } = useTheme();
 
   const documents = useDocuments();
@@ -230,11 +232,25 @@ export default function ChatScreen() {
   const askStream = useAskStream(id);
   const del = useDeleteDocument();
   const listRef = useRef<FlashListRef<Message>>(null);
+  // Prevents double-delete when the user taps the trash icon then navigates back.
+  const deletedRef = useRef(false);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [mode, setMode] = useState<Mode>('chat');
   const [sending, setSending] = useState(false);
+
+  // Auto-delete ephemeral documents when the user navigates away.
+  useEffect(() => {
+    if (!isEphemeral) return;
+    const unsub = navigation.addListener('beforeRemove', () => {
+      if (!deletedRef.current) {
+        deletedRef.current = true;
+        del.mutateAsync(id).catch(() => {});
+      }
+    });
+    return unsub;
+  }, [isEphemeral, navigation, id, del]);
 
   const doc = useMemo(
     () => documents.data?.documents.find((d) => d.id === id),
@@ -332,6 +348,7 @@ export default function ChatScreen() {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
+          deletedRef.current = true;
           await del.mutateAsync(id);
           router.back();
         },
@@ -355,6 +372,27 @@ export default function ChatScreen() {
           ),
         }}
       />
+
+      {isEphemeral && (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+            marginHorizontal: spacing.lg,
+            marginBottom: spacing.xs,
+            paddingHorizontal: spacing.md,
+            paddingVertical: spacing.sm,
+            borderRadius: 10,
+            backgroundColor: palette.accentSoft,
+          }}
+        >
+          <Clock size={14} color={palette.accent} />
+          <Text variant="caption" style={{ flex: 1, color: palette.accent }}>
+            Temporary — deleted automatically when you leave
+          </Text>
+        </View>
+      )}
 
       {!isReady ? (
         <ProcessingOrFailed status={currentStatus} error={status.data?.error ?? doc?.error} />

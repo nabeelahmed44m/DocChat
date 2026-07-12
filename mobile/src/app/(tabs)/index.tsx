@@ -82,7 +82,12 @@ export default function DocumentsScreen() {
           source === 'file' ? pickDocument : source === 'camera' ? scanWithCamera : pickImage;
         const file = await picker();
         if (!file) return;
-        await upload.mutateAsync({ file, persist });
+        const record = await upload.mutateAsync({ file, persist });
+        // Ephemeral uploads skip the library and go straight to chat.
+        // The chat screen will delete the document when the user leaves.
+        if (!persist) {
+          router.push(`/chat/${record.id}?ephemeral=true`);
+        }
       } catch (err) {
         Alert.alert(
           'Upload failed',
@@ -90,7 +95,7 @@ export default function DocumentsScreen() {
         );
       }
     },
-    [upload],
+    [upload, router],
   );
 
   const docs = documents.data?.documents ?? [];
