@@ -224,7 +224,7 @@ class BaseDocumentStore(abc.ABC):
 
     def list(self, owner: str | None = None) -> list[DocumentRecord]:
         with self._lock:
-            records = self._records.values()
+            records = [r for r in self._records.values() if r.persist]
             if owner is not None:
                 records = [r for r in records if r.owner == owner]
             return sorted(records, key=lambda r: r.created_at, reverse=True)

@@ -9,10 +9,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import {
   CalendarDays,
   CheckCircle2,
   ChevronRight,
+  Crown,
   LogOut,
   Mail,
   Moon,
@@ -21,10 +23,11 @@ import {
   Sun,
   Trash2,
   User,
+  Zap,
   XCircle,
 } from 'lucide-react-native';
 
-import { useHealth } from '@/api/hooks';
+import { useBillingStatus, useCreateCheckout, useCreatePortal, useHealth } from '@/api/hooks';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
@@ -51,6 +54,30 @@ export default function SettingsScreen() {
   const { user, updateProfile, deleteAccount, logout } = useAuth();
   const { palette, isDark, toggle } = useTheme();
   const health = useHealth();
+  const billing = useBillingStatus();
+  const checkout = useCreateCheckout();
+  const portal = useCreatePortal();
+  const isPro = billing.data?.plan === 'pro';
+
+  const handleUpgrade = async () => {
+    try {
+      const { url } = await checkout.mutateAsync();
+      await WebBrowser.openAuthSessionAsync(url, 'docchat://billing');
+      billing.refetch();
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Could not open checkout.');
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    try {
+      const { url } = await portal.mutateAsync();
+      await WebBrowser.openBrowserAsync(url);
+      billing.refetch();
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Could not open portal.');
+    }
+  };
 
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
@@ -321,6 +348,42 @@ export default function SettingsScreen() {
             <Button label="Sign in" onPress={() => router.push('/login')} />
           </View>
         </Card>
+      )}
+
+      {/* ── Plan ──────────────────────────────────────────────────── */}
+      {user && (
+        <>
+          <Text variant="caption" tone="muted" style={styles.section}>PLAN</Text>
+          <Card>
+            <View style={styles.rowBtn}>
+              {isPro ? (
+                <Crown size={18} color={palette.accent} />
+              ) : (
+                <Zap size={18} color={palette.textMuted} />
+              )}
+              <View style={styles.rowBtnLabel}>
+                <Text variant="bodyStrong">{isPro ? 'Pro' : 'Free'}</Text>
+                <Text variant="caption" tone="faint">
+                  {isPro
+                    ? `Active${billing.data?.current_period_end ? ' · renews ' + formatDate(billing.data.current_period_end) : ''}`
+                    : 'Documents up to 1 MB'}
+                </Text>
+              </View>
+              {isPro ? (
+                <Button
+                  label={portal.isPending ? '…' : 'Manage'}
+                  onPress={handleManageSubscription}
+                  variant="ghost"
+                />
+              ) : (
+                <Button
+                  label={checkout.isPending ? '…' : 'Upgrade'}
+                  onPress={handleUpgrade}
+                />
+              )}
+            </View>
+          </Card>
+        </>
       )}
 
       {/* ── Appearance ────────────────────────────────────────────── */}

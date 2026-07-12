@@ -33,5 +33,8 @@ pillow>=10.0
 # --- Cloudflare R2 (S3-compatible object storage) ---
 boto3>=1.34
 
+# --- Stripe billing ---
+stripe>=9.0
+
 # --- LLM (Gemini Flash) ---
 google-genai>=2.0

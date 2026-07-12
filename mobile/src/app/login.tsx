@@ -129,6 +129,12 @@ export default function LoginScreen() {
             </Text>
           </Text>
         </Pressable>
+
+        <Pressable onPress={() => router.replace('/')} style={[styles.footer, { marginTop: spacing.sm }]}>
+          <Text variant="caption" tone="faint">
+            Continue without signing in
+          </Text>
+        </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );

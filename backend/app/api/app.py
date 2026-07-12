@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
 from app.api.errors import register_error_handlers
-from app.api.routes import auth, documents, health, search
+from app.api.routes import auth, billing, documents, health, search
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging, get_logger
 from app.services.ingestion import IngestionService
@@ -66,4 +66,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(auth.router)
     app.include_router(documents.router)
     app.include_router(search.router)
+    app.include_router(billing.router)
     return app

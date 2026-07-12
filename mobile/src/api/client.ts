@@ -15,6 +15,8 @@ import { fetch as streamingFetch } from 'expo/fetch';
 
 import type {
   AskResponse,
+  BillingStatus,
+  CheckoutResponse,
   DocumentList,
   DocumentRecord,
   HealthResponse,
@@ -251,4 +253,13 @@ export const api = {
 
   deleteDocument: (ctx: ApiCtx, id: string) =>
     request<void>(ctx, `/documents/${id}`, { method: 'DELETE' }),
+
+  getBillingStatus: (ctx: ApiCtx) =>
+    request<BillingStatus>(ctx, '/billing/status'),
+
+  createCheckout: (ctx: ApiCtx) =>
+    request<CheckoutResponse>(ctx, '/billing/checkout', { method: 'POST' }),
+
+  createPortal: (ctx: ApiCtx) =>
+    request<CheckoutResponse>(ctx, '/billing/portal', { method: 'POST' }),
 };

@@ -88,8 +88,11 @@ export function useUploadDocument() {
   return useMutation({
     mutationFn: ({ file, persist }: { file: PickedFile; persist: boolean }) =>
       api.uploadDocument(ctx, file, persist),
-    onSuccess: (record: DocumentRecord) => {
-      qc.invalidateQueries({ queryKey: queryKeys.documents(scope) });
+    onSuccess: (record: DocumentRecord, { persist }) => {
+      // Never add ephemeral docs to the gallery list — not even briefly.
+      if (persist) {
+        qc.invalidateQueries({ queryKey: queryKeys.documents(scope) });
+      }
       qc.setQueryData(queryKeys.status(scope, record.id), {
         id: record.id,
         status: record.status,
@@ -257,5 +260,32 @@ export function useDeleteDocument() {
     mutationFn: (id: string) => api.deleteDocument(ctx, id),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: queryKeys.documents(scope) }),
+  });
+}
+
+export function useBillingStatus() {
+  const { ctx, scope } = useApiCtx();
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['billing', scope],
+    queryFn: () => api.getBillingStatus(ctx),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+}
+
+export function useCreateCheckout() {
+  const { ctx, scope } = useApiCtx();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.createCheckout(ctx),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['billing', scope] }),
+  });
+}
+
+export function useCreatePortal() {
+  const { ctx } = useApiCtx();
+  return useMutation({
+    mutationFn: () => api.createPortal(ctx),
   });
 }

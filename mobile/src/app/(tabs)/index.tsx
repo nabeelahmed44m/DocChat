@@ -5,15 +5,18 @@ import { Alert, Pressable, RefreshControl, StyleSheet, View } from 'react-native
 import { FileStack, Plus, Search, Settings2, WifiOff } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useDocuments, useHealth, useUploadDocument } from '@/api/hooks';
+import { useDocuments, useHealth, useBillingStatus, useUploadDocument } from '@/api/hooks';
 import { DocumentCard } from '@/components/DocumentCard';
 import { EmptyState } from '@/components/EmptyState';
+import { PaywallModal } from '@/components/PaywallModal';
 import { UploadMenu, type UploadSource } from '@/components/UploadMenu';
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
 import { pickDocument, pickImage, scanWithCamera } from '@/lib/pick';
 import { useTheme } from '@/lib/theme';
 import { spacing } from '@/theme/theme';
+
+const FREE_TIER_BYTES = 1 * 1024 * 1024; // 1 MB
 
 export default function DocumentsScreen() {
   const insets = useSafeAreaInsets();
@@ -23,6 +26,8 @@ export default function DocumentsScreen() {
   const health = useHealth();
   const upload = useUploadDocument();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [paywallFile, setPaywallFile] = useState<{ source: UploadSource; persist: boolean; sizeBytes: number } | null>(null);
+  const billing = useBillingStatus();
 
   const styles = useMemo(
     () =>
@@ -75,19 +80,32 @@ export default function DocumentsScreen() {
     [palette],
   );
 
+  const doUpload = useCallback(
+    async (source: UploadSource, persist: boolean) => {
+      const picker =
+        source === 'file' ? pickDocument : source === 'camera' ? scanWithCamera : pickImage;
+      const file = await picker();
+      if (!file) return;
+
+      // Gate: free tier is 1 MB; show paywall if file is larger and user isn't Pro.
+      const isPro = billing.data?.plan === 'pro';
+      if ((file.size ?? 0) > FREE_TIER_BYTES && !isPro) {
+        setPaywallFile({ source, persist, sizeBytes: file.size ?? 0 });
+        return;
+      }
+
+      const record = await upload.mutateAsync({ file, persist });
+      if (!persist) {
+        router.push(`/chat/${record.id}?ephemeral=true`);
+      }
+    },
+    [upload, router, billing.data],
+  );
+
   const handleSelect = useCallback(
     async (source: UploadSource, persist: boolean) => {
       try {
-        const picker =
-          source === 'file' ? pickDocument : source === 'camera' ? scanWithCamera : pickImage;
-        const file = await picker();
-        if (!file) return;
-        const record = await upload.mutateAsync({ file, persist });
-        // Ephemeral uploads skip the library and go straight to chat.
-        // The chat screen will delete the document when the user leaves.
-        if (!persist) {
-          router.push(`/chat/${record.id}?ephemeral=true`);
-        }
+        await doUpload(source, persist);
       } catch (err) {
         Alert.alert(
           'Upload failed',
@@ -95,7 +113,7 @@ export default function DocumentsScreen() {
         );
       }
     },
-    [upload, router],
+    [doUpload],
   );
 
   const docs = documents.data?.documents ?? [];
@@ -194,6 +212,22 @@ export default function DocumentsScreen() {
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
         onSelect={handleSelect}
+      />
+
+      <PaywallModal
+        visible={!!paywallFile}
+        fileSizeBytes={paywallFile?.sizeBytes}
+        onClose={() => setPaywallFile(null)}
+        onUpgraded={() => {
+          // Re-run the upload now that the user has upgraded.
+          if (paywallFile) {
+            const { source, persist } = paywallFile;
+            setPaywallFile(null);
+            doUpload(source, persist).catch((err) =>
+              Alert.alert('Upload failed', err instanceof Error ? err.message : 'Something went wrong.'),
+            );
+          }
+        }}
       />
     </View>
   );

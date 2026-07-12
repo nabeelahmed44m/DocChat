@@ -102,6 +102,26 @@ class Settings(BaseSettings):
         description="Max in-memory QA engines kept (LRU); evicted ones are rebuilt on demand",
     )
 
+    # --- Stripe billing (optional) ----------------------------------------
+    # Leave blank to disable billing enforcement. When set, uploads above
+    # free_tier_bytes require an active Pro subscription.
+    stripe_secret_key: str = Field(default="", description="Stripe secret key (sk_live_… or sk_test_…)")
+    stripe_webhook_secret: str = Field(default="", description="Stripe webhook signing secret (whsec_…)")
+    stripe_price_id: str = Field(default="", description="Stripe Price ID for the Pro plan (price_…)")
+    # Public URL of this server — used to build Stripe success/cancel redirect URLs.
+    server_base_url: str = Field(
+        default="http://localhost:8000",
+        description="Public HTTPS URL of this server (e.g. your Cloudflare tunnel URL)",
+    )
+    free_tier_bytes: int = Field(
+        default=1 * 1024 * 1024,
+        description="Max upload size on the free plan (default 1 MB)",
+    )
+
+    @property
+    def billing_enabled(self) -> bool:
+        return bool(self.stripe_secret_key and self.stripe_price_id)
+
     # --- Cloudflare R2 object storage (optional) --------------------------
     # Leave blank to keep files on local disk. When all four are set, uploaded
     # files are written to R2 for durability; the local copy is kept as a hot

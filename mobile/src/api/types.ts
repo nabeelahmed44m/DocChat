@@ -103,4 +103,15 @@ export interface PickedFile {
   uri: string;
   name: string;
   mimeType: string;
+  size?: number;  // bytes, populated by pickers that expose it
+}
+
+export interface BillingStatus {
+  plan: 'free' | 'pro';
+  status: 'active' | 'inactive' | 'past_due' | 'canceled';
+  current_period_end: string | null;
+}
+
+export interface CheckoutResponse {
+  url: string;
 }

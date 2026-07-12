@@ -26,10 +26,39 @@ const ACCEPTED_DOC_TYPES = [
   'text/csv',
 ];
 
-function guessName(uri: string, fallbackExt: string): string {
-  const tail = uri.split('/').pop();
-  if (tail && tail.includes('.')) return decodeURIComponent(tail);
-  return `scan-${Date.now()}.${fallbackExt}`;
+// UUID pattern iOS uses as photo filenames — not human-readable.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\./i;
+
+function dateStamp(): string {
+  const d = new Date();
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    .replace(/ /g, ' '); // "12 Jul 2026"
+}
+
+/**
+ * Return a clean, human-readable filename.
+ *
+ * - Document picker: always has a real name → preserve it (strip path prefix if present).
+ * - Image picker: iOS often gives a UUID like "7A2F8B9C-….jpg" → replace with a
+ *   friendly label. A real name like "IMG_1234.jpg" is kept as-is.
+ * - Camera: never has a meaningful name → always generate "Scan, DD Mon YYYY.jpg".
+ */
+function cleanDocName(raw: string | null | undefined): string {
+  if (!raw) return `Document ${dateStamp()}.pdf`;
+  const base = decodeURIComponent(raw.split('/').pop() ?? raw);
+  return base;
+}
+
+function cleanImageName(raw: string | null | undefined, ext = 'jpg'): string {
+  if (!raw) return `Photo, ${dateStamp()}.${ext}`;
+  const base = decodeURIComponent(raw.split('/').pop() ?? raw);
+  // Replace UUID filenames with something readable.
+  if (UUID_RE.test(base)) return `Photo, ${dateStamp()}.${ext}`;
+  return base;
+}
+
+function scanName(ext = 'jpg'): string {
+  return `Scan, ${dateStamp()}.${ext}`;
 }
 
 /** Open the system document picker (PDF/DOCX/TXT from Files, Drive, iCloud…). */
@@ -41,10 +70,12 @@ export async function pickDocument(): Promise<PickedFile | null> {
   });
   if (result.canceled || !result.assets?.length) return null;
   const asset = result.assets[0];
+  const ext = (asset.mimeType ?? '').includes('image') ? 'jpg' : 'pdf';
   return {
     uri: asset.uri,
-    name: asset.name ?? guessName(asset.uri, 'pdf'),
+    name: cleanDocName(asset.name) || `Document ${dateStamp()}.${ext}`,
     mimeType: asset.mimeType ?? 'application/octet-stream',
+    size: asset.size,
   };
 }
 
@@ -58,10 +89,12 @@ export async function pickImage(): Promise<PickedFile | null> {
   });
   if (result.canceled || !result.assets?.length) return null;
   const asset = result.assets[0];
+  const ext = (asset.mimeType ?? 'image/jpeg').split('/')[1] ?? 'jpg';
   return {
     uri: asset.uri,
-    name: asset.fileName ?? guessName(asset.uri, 'jpg'),
+    name: cleanImageName(asset.fileName, ext),
     mimeType: asset.mimeType ?? 'image/jpeg',
+    size: asset.fileSize,
   };
 }
 
@@ -75,9 +108,11 @@ export async function scanWithCamera(): Promise<PickedFile | null> {
   });
   if (result.canceled || !result.assets?.length) return null;
   const asset = result.assets[0];
+  const ext = (asset.mimeType ?? 'image/jpeg').split('/')[1] ?? 'jpg';
   return {
     uri: asset.uri,
-    name: asset.fileName ?? guessName(asset.uri, 'jpg'),
+    name: scanName(ext),
     mimeType: asset.mimeType ?? 'image/jpeg',
+    size: asset.fileSize,
   };
 }

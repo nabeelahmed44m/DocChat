@@ -172,6 +172,26 @@ async def upload_document(
             ),
         )
 
+    # Free-tier gate: files above the free limit require an active Pro subscription.
+    if settings.billing_enabled and len(data) > settings.free_tier_bytes:
+        from app.services.storage.subscription_store import get_subscription_store
+
+        sub = get_subscription_store().get(owner)
+        if sub is None or not sub.is_pro:
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "code": "upgrade_required",
+                    "message": (
+                        f"Free plan supports documents up to "
+                        f"{settings.free_tier_bytes // (1024 * 1024)} MB. "
+                        "Upgrade to Pro for files up to 50 MB."
+                    ),
+                    "file_size_bytes": len(data),
+                    "limit_bytes": settings.free_tier_bytes,
+                },
+            )
+
     record = store.create(
         filename=display_name or file.filename or f"upload{ext}",
         mime_type=file.content_type or "application/octet-stream",
