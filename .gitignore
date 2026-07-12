@@ -1,0 +1,57 @@
+# ── Python (backend) ──────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# ── Node / Expo (mobile) ──────────────────────────────────────────────────────
+node_modules/
+.expo/
+web-build/
+expo-env.d.ts
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.tsbuildinfo
+/mobile/ios/
+/mobile/android/
+
+# ── Secrets & environment ─────────────────────────────────────────────────────
+.env
+.env*.local
+*.pem
+
+# ── Runtime data (uploaded documents, SQLite registry) ────────────────────────
+backend/data/
+
+# ── Graphify knowledge graph outputs ─────────────────────────────────────────
+graphify-out/
+**/graphify-out/
+
+# ── Claude Code ───────────────────────────────────────────────────────────────
+.claude/
+**/.claude/
+
+# ── Editor / OS ───────────────────────────────────────────────────────────────
+.DS_Store
+.idea/
+.vscode/
+*.swp
+Thumbs.db
