@@ -81,9 +81,9 @@ export default function SignupScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.hero}>
-          <Text variant="display">Create account</Text>
+          <Text variant="display">Gist</Text>
           <Text variant="body" tone="muted">
-            Sign up to save and chat with your documents
+            Create an account to save and talk to your documents
           </Text>
         </View>
 

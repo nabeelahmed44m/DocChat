@@ -76,9 +76,9 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.hero}>
-          <Text variant="display">Welcome back</Text>
+          <Text variant="display">Gist</Text>
           <Text variant="body" tone="muted">
-            Sign in to access your documents
+            Sign in to talk to your documents
           </Text>
         </View>
 

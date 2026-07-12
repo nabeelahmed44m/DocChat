@@ -16,8 +16,8 @@ import {
 
 import { useSettings } from './settings';
 
-const TOKEN_KEY = 'docchat.token';
-const USER_KEY = 'docchat.user';
+const TOKEN_KEY = 'gist.token';
+const USER_KEY = 'gist.user';
 
 export interface AuthUser {
   id: string;

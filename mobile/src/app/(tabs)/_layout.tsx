@@ -27,7 +27,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Docs',
+          title: 'Library',
           headerShown: false,
           tabBarIcon: ({ color, size }) => <FileText size={size - 2} color={color} />,
         }}

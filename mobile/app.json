@@ -1,25 +1,25 @@
 {
   "expo": {
-    "name": "Doc Chat",
-    "slug": "doc-chat",
+    "name": "Gist",
+    "slug": "gist-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "docchat",
+    "scheme": "gist",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0A0B0D",
     "ios": {
-      "icon": "./assets/expo.icon",
       "supportsTablet": true,
+      "bundleIdentifier": "com.nabeel.gistapp",
       "infoPlist": {
-        "NSCameraUsageDescription": "Doc Chat uses the camera so you can scan a paper document and ask questions about it.",
-        "NSPhotoLibraryUsageDescription": "Doc Chat needs access to your photos so you can upload an image of a document."
-      },
-      "bundleIdentifier": "com.anonymous.doc-chat"
+        "NSCameraUsageDescription": "Gist uses the camera so you can scan a paper document and ask questions about it.",
+        "NSPhotoLibraryUsageDescription": "Gist needs access to your photos so you can upload an image of a document."
+      }
     },
     "android": {
+      "package": "com.gistapp.gist",
       "adaptiveIcon": {
-        "backgroundColor": "#0A0B0D",
+        "backgroundColor": "#5645D4",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -38,16 +38,16 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0A0B0D",
+          "backgroundColor": "#5645D4",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 160
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Doc Chat needs access to your photos so you can upload an image of a document.",
-          "cameraPermission": "Doc Chat uses the camera so you can scan a paper document and ask questions about it."
+          "photosPermission": "Gist needs access to your photos so you can upload an image of a document.",
+          "cameraPermission": "Gist uses the camera so you can scan a paper document and ask questions about it."
         }
       ]
     ],

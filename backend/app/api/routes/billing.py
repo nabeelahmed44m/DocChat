@@ -2,7 +2,7 @@
 
 Flow:
   POST /billing/checkout  → creates Stripe Checkout Session, returns URL
-  GET  /billing/success   → Stripe redirect target; bounces to docchat:// deep link
+  GET  /billing/success   → Stripe redirect target; bounces to gist:// deep link
   GET  /billing/cancel    → same for cancellation
   GET  /billing/status    → current plan for the logged-in user
   POST /billing/portal    → creates Customer Portal session for managing subscription
@@ -114,12 +114,12 @@ def create_checkout(
 @router.get("/success")
 def billing_success(session_id: str = "") -> RedirectResponse:
     """Stripe bounces here after payment; we redirect to the app's deep link."""
-    return RedirectResponse(url=f"docchat://billing/success?session_id={session_id}")
+    return RedirectResponse(url=f"gist://billing/success?session_id={session_id}")
 
 
 @router.get("/cancel")
 def billing_cancel() -> RedirectResponse:
-    return RedirectResponse(url="docchat://billing/cancel")
+    return RedirectResponse(url="gist://billing/cancel")
 
 
 @router.get("/status", response_model=BillingStatusResponse)

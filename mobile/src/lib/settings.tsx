@@ -19,8 +19,8 @@ import {
 } from 'react';
 import { Platform } from 'react-native';
 
-const BASE_URL_KEY = 'docchat.baseUrl';
-const API_KEY_KEY = 'docchat.apiKey';
+const BASE_URL_KEY = 'gist.baseUrl';
+const API_KEY_KEY = 'gist.apiKey';
 
 // Default points at the active Cloudflare tunnel so fresh installs work on device.
 // Update this whenever the tunnel URL changes.

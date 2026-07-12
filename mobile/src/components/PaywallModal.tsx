@@ -111,7 +111,7 @@ export function PaywallModal({ visible, fileSizeBytes, onClose, onUpgraded }: Pa
     }
     try {
       const { url } = await checkout.mutateAsync();
-      const result = await WebBrowser.openAuthSessionAsync(url, 'docchat://billing');
+      const result = await WebBrowser.openAuthSessionAsync(url, 'gist://billing');
       if (result.type === 'success') {
         // Refresh billing status then tell parent to retry
         await qc.invalidateQueries({ queryKey: ['billing'] });

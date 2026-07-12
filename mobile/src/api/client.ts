@@ -1,5 +1,5 @@
 /**
- * Typed HTTP client for the Doc Chat backend.
+ * Typed HTTP client for the Gist backend.
  *
  * A thin, dependency-light wrapper: it owns URL construction, JSON handling,
  * multipart uploads, timeouts, auth headers, and turning non-2xx responses into

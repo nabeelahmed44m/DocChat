@@ -18,7 +18,7 @@ import { darkPalette, lightPalette, makeShadow, type Palette } from '@/theme/the
 
 export type ThemeMode = 'light' | 'dark';
 
-const THEME_KEY = 'docchat.theme';
+const THEME_KEY = 'gist.theme';
 
 interface ThemeValue {
   mode: ThemeMode;

@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     max_file_bytes: int = Field(default=50 * 1024 * 1024, description="Upload size ceiling")
 
     # --- API --------------------------------------------------------------
-    api_title: str = Field(default="Doc Chat API")
+    api_title: str = Field(default="Gist API")
     api_version: str = Field(default="0.5.0")
     cors_origins: list[str] = Field(
         default=["*"], description="Allowed CORS origins for the mobile/web client"

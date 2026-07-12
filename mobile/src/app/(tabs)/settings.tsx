@@ -62,7 +62,7 @@ export default function SettingsScreen() {
   const handleUpgrade = async () => {
     try {
       const { url } = await checkout.mutateAsync();
-      await WebBrowser.openAuthSessionAsync(url, 'docchat://billing');
+      await WebBrowser.openAuthSessionAsync(url, 'gist://billing');
       billing.refetch();
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Could not open checkout.');
@@ -515,7 +515,7 @@ export default function SettingsScreen() {
       )}
 
       <Text variant="caption" tone="faint" style={styles.footer}>
-        Doc Chat · v0.1.0
+        Gist · v1.0.0
       </Text>
     </ScrollView>
   );

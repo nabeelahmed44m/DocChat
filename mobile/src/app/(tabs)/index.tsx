@@ -123,9 +123,9 @@ export default function DocumentsScreen() {
     <View style={[styles.container, { paddingTop: insets.top + spacing.sm }]}>
       <View style={styles.header}>
         <View style={styles.headerText}>
-          <Text variant="display">Documents</Text>
+          <Text variant="display">Gist</Text>
           <Text variant="caption" tone="muted">
-            Upload, then ask anything — answers cite the page.
+            Talk to your documents.
           </Text>
         </View>
         <View style={styles.headerActions}>
