@@ -27,5 +27,5 @@ RUN mkdir -p /app/data
 
 EXPOSE 8000
 
-# Download the spaCy-free stack needs nothing extra at runtime.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Shell form so ${PORT} expands — Railway/Render inject the port to bind.
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
