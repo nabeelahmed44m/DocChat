@@ -12,29 +12,24 @@ import {
 import * as WebBrowser from 'expo-web-browser';
 import {
   CalendarDays,
-  CheckCircle2,
-  ChevronRight,
   Crown,
   LogOut,
   Mail,
   Moon,
   Pencil,
-  Server,
   Sun,
   Trash2,
   User,
   Zap,
-  XCircle,
 } from 'lucide-react-native';
 
-import { useBillingStatus, useCreateCheckout, useCreatePortal, useHealth } from '@/api/hooks';
+import { useBillingStatus, useCreateCheckout, useCreatePortal } from '@/api/hooks';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Text } from '@/components/ui/Text';
 import { useAuth } from '@/lib/auth';
-import { DEFAULT_BASE_URL, useSettings } from '@/lib/settings';
 import { useTheme } from '@/lib/theme';
-import { radius, spacing, typography } from '@/theme/theme';
+import { spacing, typography } from '@/theme/theme';
 
 function formatDate(iso: string): string {
   try {
@@ -50,10 +45,8 @@ function formatDate(iso: string): string {
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { baseUrl, setBaseUrl } = useSettings();
   const { user, updateProfile, deleteAccount, logout } = useAuth();
   const { palette, isDark, toggle } = useTheme();
-  const health = useHealth();
   const billing = useBillingStatus();
   const checkout = useCreateCheckout();
   const portal = useCreatePortal();
@@ -82,12 +75,6 @@ export default function SettingsScreen() {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const [savingName, setSavingName] = useState(false);
-
-  const [editingServer, setEditingServer] = useState(false);
-  const [urlDraft, setUrlDraft] = useState(baseUrl);
-  const [savedUrl, setSavedUrl] = useState(false);
-
-  const isConnected = !health.isLoading && !health.isError && !!health.data;
 
   const styles = useMemo(
     () =>
@@ -158,14 +145,7 @@ export default function SettingsScreen() {
           marginTop: spacing.sm,
         },
 
-        // Server row
-        urlInput: {
-          flex: 1,
-          color: palette.text,
-          ...typography.body,
-        },
-
-        // Row button (server toggle, sign out etc.)
+        // Row button (sign out etc.)
         rowBtn: {
           flexDirection: 'row',
           alignItems: 'center',
@@ -211,14 +191,6 @@ export default function SettingsScreen() {
     } finally {
       setSavingName(false);
     }
-  };
-
-  const saveServer = async () => {
-    await setBaseUrl(urlDraft || DEFAULT_BASE_URL);
-    setSavedUrl(true);
-    setTimeout(() => setSavedUrl(false), 1500);
-    health.refetch();
-    setEditingServer(false);
   };
 
   const handleLogout = () => {
@@ -410,85 +382,6 @@ export default function SettingsScreen() {
             accessibilityLabel="Toggle dark mode"
           />
         </View>
-      </Card>
-
-      {/* ── Server ────────────────────────────────────────────────── */}
-      <Text variant="caption" tone="muted" style={styles.section}>SERVER</Text>
-      <Card>
-        {/* Connection status row — always visible */}
-        <TouchableOpacity
-          style={styles.rowBtn}
-          onPress={() => setEditingServer((v) => !v)}
-          activeOpacity={0.7}
-        >
-          <Server size={18} color={isConnected ? palette.success : palette.danger} />
-          <View style={styles.rowBtnLabel}>
-            {health.isLoading ? (
-              <Text variant="body" tone="muted">Checking connection…</Text>
-            ) : isConnected ? (
-              <>
-                <Text variant="bodyStrong" tone="success">Connected</Text>
-                <Text variant="caption" tone="faint" numberOfLines={1}>{baseUrl}</Text>
-              </>
-            ) : (
-              <>
-                <Text variant="bodyStrong" tone="danger">Not connected</Text>
-                <Text variant="caption" tone="faint" numberOfLines={1}>{baseUrl}</Text>
-              </>
-            )}
-          </View>
-          {isConnected ? (
-            <CheckCircle2 size={18} color={palette.success} />
-          ) : (
-            <ChevronRight size={16} color={palette.textMuted} />
-          )}
-        </TouchableOpacity>
-
-        {/* URL editor — only shown when not connected, or when user taps to edit */}
-        {(!isConnected || editingServer) && (
-          <>
-            <View style={styles.divider} />
-            <View style={styles.infoRow}>
-              <TextInput
-                style={[styles.urlInput, { flex: 1 }]}
-                value={urlDraft}
-                onChangeText={setUrlDraft}
-                placeholder={DEFAULT_BASE_URL}
-                placeholderTextColor={palette.textFaint}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-              />
-            </View>
-            <Button
-              label={savedUrl ? 'Saved ✓' : 'Save & test connection'}
-              onPress={saveServer}
-              style={{ marginTop: spacing.xs }}
-            />
-          </>
-        )}
-
-        {/* Supported formats — only when connected */}
-        {isConnected && health.data?.supported_extensions && (
-          <>
-            <View style={styles.divider} />
-            <View style={{ paddingTop: spacing.sm, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-              {health.data.supported_extensions.map((ext) => (
-                <View
-                  key={ext}
-                  style={{
-                    backgroundColor: palette.surfacePressed,
-                    paddingHorizontal: spacing.sm,
-                    paddingVertical: 3,
-                    borderRadius: radius.sm,
-                  }}
-                >
-                  <Text variant="micro" tone="muted">{ext}</Text>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
       </Card>
 
       {/* ── Danger zone ───────────────────────────────────────────── */}

@@ -90,7 +90,7 @@ async function request<T>(
       throw new ApiError('The request timed out. Check the server address.', 0);
     }
     throw new ApiError(
-      `Could not reach the server (${ctx.baseUrl}). Check the address in Settings.`,
+      `Could not reach the server (${ctx.baseUrl}). Check your network connection.`,
       0,
     );
   } finally {
@@ -151,7 +151,7 @@ async function streamText(
       throw new ApiError('The request timed out. Check the server address.', 0);
     }
     throw new ApiError(
-      `Could not reach the server (${ctx.baseUrl}). Check the address in Settings.`,
+      `Could not reach the server (${ctx.baseUrl}). Check your network connection.`,
       0,
     );
   } finally {
@@ -195,7 +195,7 @@ export const api = {
     } catch (err) {
       if (err instanceof ApiError) throw err;
       throw new ApiError(
-        `Upload failed (${ctx.baseUrl}). Check the address in Settings.`,
+        `Upload failed (${ctx.baseUrl}). Check your network connection.`,
         0,
       );
     }

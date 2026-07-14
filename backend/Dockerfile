@@ -20,9 +20,10 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY app ./app
 
-# Persist uploads + registry outside the image layer.
+# Scratch dir for uploads-in-flight; durable state lives in Postgres + R2.
+# (No VOLUME instruction — Railway rejects it; attach a Railway Volume at
+# /app/data instead if you ever need persistent local storage.)
 RUN mkdir -p /app/data
-VOLUME ["/app/data"]
 
 EXPOSE 8000
 

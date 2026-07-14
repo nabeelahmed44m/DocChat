@@ -1,10 +1,8 @@
 /**
- * App settings — currently just the backend base URL, persisted with
- * AsyncStorage and exposed through context so any screen can read/update it.
- *
- * The base URL is a user setting (not a build constant) because during
- * development the phone talks to a laptop on the LAN, and in production it
- * points at the deployed API. A sensible platform default is provided.
+ * App settings — the backend base URL is a build-time constant taken from
+ * mobile/.env (EXPO_PUBLIC_API_URL); the optional API key is a user setting
+ * persisted with AsyncStorage. Both are exposed through context so any
+ * screen can read them.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,18 +15,17 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Platform } from 'react-native';
 
-const BASE_URL_KEY = 'gist.baseUrl';
 const API_KEY_KEY = 'gist.apiKey';
 
-// Default points at the active Cloudflare tunnel so fresh installs work on device.
-// Update this whenever the tunnel URL changes.
-export const DEFAULT_BASE_URL = 'https://differential-reports-merchant-memorabilia.trycloudflare.com';
+// Backend URL comes from the build environment (mobile/.env). Expo inlines
+// EXPO_PUBLIC_* vars at build time; restart the dev server after changing it.
+export const DEFAULT_BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/+$/, '') ||
+  'http://127.0.0.1:8000';
 
 interface SettingsValue {
   baseUrl: string;
-  setBaseUrl: (url: string) => Promise<void>;
   apiKey: string;
   setApiKey: (key: string) => Promise<void>;
   ready: boolean;
@@ -37,26 +34,15 @@ interface SettingsValue {
 const SettingsContext = createContext<SettingsValue | null>(null);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [baseUrl, setBaseUrlState] = useState(DEFAULT_BASE_URL);
   const [apiKey, setApiKeyState] = useState('');
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      AsyncStorage.getItem(BASE_URL_KEY),
-      AsyncStorage.getItem(API_KEY_KEY),
-    ])
-      .then(([storedUrl, storedKey]) => {
-        if (storedUrl) setBaseUrlState(storedUrl);
+    AsyncStorage.getItem(API_KEY_KEY)
+      .then((storedKey) => {
         if (storedKey) setApiKeyState(storedKey);
       })
       .finally(() => setReady(true));
-  }, []);
-
-  const setBaseUrl = useCallback(async (url: string) => {
-    const trimmed = url.trim().replace(/\/+$/, '');
-    setBaseUrlState(trimmed);
-    await AsyncStorage.setItem(BASE_URL_KEY, trimmed);
   }, []);
 
   const setApiKey = useCallback(async (key: string) => {
@@ -66,8 +52,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ baseUrl, setBaseUrl, apiKey, setApiKey, ready }),
-    [baseUrl, setBaseUrl, apiKey, setApiKey, ready],
+    () => ({ baseUrl: DEFAULT_BASE_URL, apiKey, setApiKey, ready }),
+    [apiKey, setApiKey, ready],
   );
 
   return (
